@@ -1,13 +1,14 @@
 package org.example;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
+
+import static java.lang.Thread.sleep;
 
 public abstract class BasePage {
     protected WebDriver driver;
@@ -46,8 +47,22 @@ public abstract class BasePage {
 
     // ---- Actions ----
 
-    protected void click(By locator) {
-        waitForClickable(locator).click();
+    protected void click(By locator) throws InterruptedException {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(locator));
+
+        // Scroll into view
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", element);
+
+        // Extra small wait to ensure UI stabilizes
+        sleep(200);
+
+        // Click via Actions as a fallback if normal click fails
+        try {
+            element.click();
+        } catch (ElementNotInteractableException e) {
+            new Actions(driver).moveToElement(element).click().perform();
+        }
     }
 
     protected void type(By locator, String text) {
